@@ -1,10 +1,12 @@
 import express from "express";
-import dataset from "./data/index.js";
+import router from "./routes/index.v1.js";
 
 const app = express();
 
+app.use("/api/v1", router);
+
 app.get("/", (req, res) => {
-  res.send("Data is loaded");
+  res.send("Welcome to my Quotes API");
 });
 
 export default app;
