@@ -32,4 +32,12 @@ function loadQuotes() {
   });
 }
 
-export { loadQuotes, dataset as quotes };
+function addQuote(quote) {
+  Object.assign(quote, {
+    id: _id(),
+  });
+  dataset.push(quote);
+  return quote;
+}
+
+export { loadQuotes, dataset as quotes, addQuote };
