@@ -2,6 +2,7 @@ import * as dotenv from "dotenv";
 import express from "express";
 import jwt from "jsonwebtoken";
 import { rateLimit } from "express-rate-limit";
+import { v4 as uuid } from "uuid";
 
 dotenv.config();
 
@@ -20,6 +21,8 @@ const posts = [
 
 let refresh_tokens = [];
 
+let apikeys = [];
+
 const limiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   limit: 20,
@@ -30,6 +33,18 @@ const limiter = rateLimit({
 
 function genAccessToken(user) {
   return jwt.sign(user, process.env.ACCESS_SECRET, { expiresIn: "15min" });
+}
+
+function genApiKey() {
+  return uuid();
+}
+
+function authApi(req, res, next) {
+  const { apiKey } = req.query;
+  if (!apikeys.includes(apiKey)) {
+    return res.status(403).json({ error: "You need an APIKEY to proceed." });
+  }
+  next();
 }
 
 function authenticate(req, res, next) {
@@ -51,9 +66,22 @@ app.use(limiter);
 
 app.use(express.json());
 
+app.get("/public", authApi, (req, res) => {
+  res.status(200).json({ message: "This is a public API." });
+});
+
 app.get("/posts", authenticate, (req, res) => {
   // console.log(req.user);
   req.res.json(posts.filter((p) => p.username == req.user.username));
+});
+
+app.get("/generateApikey", authenticate, (req, res) => {
+  const user = req.user;
+  user.apiKey = genApiKey();
+  apikeys.push(user.apiKey);
+  res.status(200).json({
+    apiKey: user.apiKey,
+  });
 });
 
 app.post("/login", (req, res) => {
