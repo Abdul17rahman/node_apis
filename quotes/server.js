@@ -8,7 +8,7 @@ const PORT = 3000;
 async function startServer() {
   await loadQuotes();
   server.listen(PORT, () => {
-    console.log("Server running....");
+    console.log("Server running on PORT, ", PORT);
   });
 }
 

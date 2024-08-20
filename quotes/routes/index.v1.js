@@ -1,18 +1,30 @@
 import express from "express";
-import { quotes, addQuote } from "./../data/index.js";
-import paginate from "../utils/index.js";
+import {
+  quotes,
+  addQuote,
+  delQuote,
+  quoteExists,
+  getRandQuote,
+  addToken,
+} from "./../data/index.js";
+import { registerUser, userExist } from "../data/users.js";
+import { paginate } from "../utils/index.js";
+import { basicAuth } from "../middleware.js";
+import {
+  generateAPIKEY,
+  generateRefreshToken,
+  generateAccessToken,
+} from "../utils/index.js";
 
 const router = express.Router();
 
 // Gets a random quote - no auth
 router.get("/", (req, res) => {
-  const rand = Math.floor(Math.random() * quotes.length);
-  const randomQuote = quotes[rand];
-  res.status(200).json(randomQuote);
+  res.status(200).json(getRandQuote());
 });
 
 // Gets all quotes paginated - api-key or token
-router.get("/quotes", (req, res) => {
+router.get("/quotes", basicAuth, (req, res) => {
   const { page = 1, limit = 10 } = req.query;
   const currentPage = parseInt(page);
   const quotesPerPage = parseInt(limit);
@@ -26,20 +38,27 @@ router.get("/quotes", (req, res) => {
   res.status(200).json(resData);
 });
 
-// Register a new user
+// Register a new user - basic auth
 router.post("/register", (req, res) => {
-  const [type, authCredentials] = req.headers.authorization.split(" ") || "";
-  const [username, password] = Buffer.from(authCredentials, "base64")
-    .toString()
-    .split(":");
-  console.log(username, password);
-  res.status(200).json({ status: "You have succesfully registered" });
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: "Missing registration credentials." });
+  }
+  const registeredUser = registerUser({
+    username,
+    password: Buffer.from(password).toString("base64"),
+  });
+  res.status(201).json({
+    id: registeredUser.id,
+    username: registeredUser.username,
+    status: "User successfully registered.",
+  });
 });
 
 // Get single quote - basic auth
-router.get("/quote/:id", (req, res) => {
+router.get("/quotes/:id", (req, res) => {
   const { id: _id } = req.params;
-  const foundQuote = quotes.find(({ id }) => id === _id);
+  const foundQuote = quoteExists(_id);
   if (!foundQuote) {
     return res.status(400).json({
       error: "Quote not found.!",
@@ -56,8 +75,40 @@ router.post("/quotes", (req, res) => {
     category,
   };
   const result = addQuote(newQuote);
-  console.log("added quote");
   res.status(201).json(result);
+});
+
+router.delete("/quotes/:id", (req, res) => {
+  const { id } = req.params;
+  const deleted = delQuote(id);
+  if (deleted) {
+    res.status(200).json({ ...deleted, status: "Quote successfully deleted." });
+  } else {
+    res.status(404).json({
+      error: "Quote doesn't exist.",
+    });
+  }
+});
+
+router.post("/generateToken", basicAuth, (req, res) => {
+  const user = userExist(req.user);
+  if (!user) {
+    return res
+      .status(401)
+      .json({ error: "User doesn't exist, please register" });
+  }
+  const refreshToken = generateRefreshToken({
+    id: user.id,
+    username: user.username,
+  });
+  const accessToken = generateAccessToken({
+    id: user.id,
+    username: user.username,
+  });
+  addToken(refreshToken);
+  res
+    .status(200)
+    .json({ id: user.id, name: user.username, refreshToken, accessToken });
 });
 
 export default router;

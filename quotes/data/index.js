@@ -2,7 +2,11 @@ import { v4 as _id } from "uuid";
 import { parse } from "csv-parse";
 import fs from "fs";
 
-const dataset = [];
+let dataset = [];
+
+let apiKeys = [];
+
+let refreshTokens = [];
 
 function loadQuotes() {
   return new Promise((resolve, reject) => {
@@ -26,10 +30,18 @@ function loadQuotes() {
         .on("end", () => {
           console.log("Data succesfully loaded...", dataset.length);
           resolve();
-          // console.log(dataset[1]);
         })
     );
   });
+}
+
+function getRandQuote() {
+  const rand = Math.floor(Math.random() * dataset.length);
+  return dataset[rand];
+}
+
+function quoteExists(_id) {
+  return dataset.find(({ id }) => id === _id);
 }
 
 function addQuote(quote) {
@@ -40,4 +52,40 @@ function addQuote(quote) {
   return quote;
 }
 
-export { loadQuotes, dataset as quotes, addQuote };
+function delQuote(id) {
+  const toBeDeleted = quoteExists(id);
+  if (toBeDeleted) {
+    dataset = dataset.filter((q) => q.id !== id);
+    return toBeDeleted;
+  }
+  return null;
+}
+
+function addToken(token) {
+  refreshTokens.push(token);
+}
+
+function addKey(apikey) {
+  apiKeys.push(apikey);
+}
+
+function checkToken(token) {
+  return refreshTokens.includes(token);
+}
+
+function checkKey(key) {
+  return apiKeys.includes(key);
+}
+
+export {
+  loadQuotes,
+  dataset as quotes,
+  getRandQuote,
+  addQuote,
+  delQuote,
+  quoteExists,
+  addKey,
+  checkKey,
+  addToken,
+  checkToken,
+};
