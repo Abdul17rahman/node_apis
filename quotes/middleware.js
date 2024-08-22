@@ -33,9 +33,7 @@ function tokenAuth(req, res, next) {
   const token = authHeaders && authHeaders.split(" ")[1];
 
   if (!token) {
-    return res
-      .status(403)
-      .json({ error: "Not authorized, token expired or missing" });
+    return res.status(403).json({ error: "Access token required or expired." });
   }
 
   try {

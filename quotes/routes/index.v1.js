@@ -6,10 +6,11 @@ import {
   quoteExists,
   getRandQuote,
   addToken,
+  addKey,
 } from "./../data/index.js";
 import { registerUser, userExist } from "../data/users.js";
 import { paginate } from "../utils/index.js";
-import { basicAuth } from "../middleware.js";
+import { apikeyAuth, basicAuth, tokenAuth } from "../middleware.js";
 import {
   generateAPIKEY,
   generateRefreshToken,
@@ -19,7 +20,7 @@ import {
 const router = express.Router();
 
 // Gets a random quote - no auth
-router.get("/", (req, res) => {
+router.get("/", apikeyAuth, (req, res) => {
   res.status(200).json(getRandQuote());
 });
 
@@ -56,7 +57,7 @@ router.post("/register", (req, res) => {
 });
 
 // Get single quote - basic auth
-router.get("/quotes/:id", (req, res) => {
+router.get("/quotes/:id", tokenAuth, (req, res) => {
   const { id: _id } = req.params;
   const foundQuote = quoteExists(_id);
   if (!foundQuote) {
@@ -67,7 +68,7 @@ router.get("/quotes/:id", (req, res) => {
   res.status(200).json(foundQuote);
 });
 
-router.post("/quotes", (req, res) => {
+router.post("/quotes", basicAuth, (req, res) => {
   const { quote, author, category } = req.body;
   const newQuote = {
     quote,
@@ -78,7 +79,7 @@ router.post("/quotes", (req, res) => {
   res.status(201).json(result);
 });
 
-router.delete("/quotes/:id", (req, res) => {
+router.delete("/quotes/:id", tokenAuth, (req, res) => {
   const { id } = req.params;
   const deleted = delQuote(id);
   if (deleted) {
@@ -109,6 +110,20 @@ router.post("/generateToken", basicAuth, (req, res) => {
   res
     .status(200)
     .json({ id: user.id, name: user.username, refreshToken, accessToken });
+});
+
+router.post("/generateAPIKey", basicAuth, (req, res) => {
+  const user = userExist(req.user);
+
+  if (!user) {
+    return res
+      .status(401)
+      .json({ error: "User doesn't exist, please register." });
+  }
+  const apiKey = generateAPIKEY(user);
+  addKey(apiKey);
+
+  res.status(200).json({ id: user.id, name: user.username, apiKey });
 });
 
 export default router;

@@ -1,6 +1,5 @@
 import express from "express";
 import router from "./routes/index.v1.js";
-import { users } from "./data/users.js";
 import session from "express-session";
 import * as dotenv from "dotenv";
 
