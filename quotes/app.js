@@ -12,7 +12,7 @@ app.use(
     secret: "thisisasecret",
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: true, maxAge: 24 * 60 * 60 },
+    cookie: { secure: false, maxAge: 24 * 60 * 60 },
   })
 );
 

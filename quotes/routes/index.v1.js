@@ -20,7 +20,7 @@ import {
 const router = express.Router();
 
 // Gets a random quote - no auth
-router.get("/", apikeyAuth, (req, res) => {
+router.get("/", (req, res) => {
   res.status(200).json(getRandQuote());
 });
 
